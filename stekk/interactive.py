@@ -9,6 +9,8 @@ import click
 import os
 here, _ = os.path.split(__file__)
 
+function_t = type(lambda: ...)
+
 UP_ARROW = "\x1b[A"
 DOWN_ARROW = "\x1b[B"
 
@@ -90,6 +92,14 @@ def console(vm=None):
                         if i == 0:
                             indent = True
                         else:
+                            if command[-i-1:-i] == ".":
+                                possible = [name for name in possible
+                                            if isinstance(
+                                                vm.names[name],
+                                                (
+                                                    function_t,
+                                                    stekk.parser.CodeBlock
+                                                ))]
                             while len(possible) > 1:
                                 ps = " " + " ".join(possible)
                                 click.secho(ps, nl=False, fg="bright_green")
@@ -100,9 +110,12 @@ def console(vm=None):
                                 else:
                                     possible = [name for name in possible
                                                 if name.startswith(subs + c)]
-                                    subs += c
-                                    command += c
-                                    i += 1
+                                    if c.isspace() or c.isprintable():
+                                        subs += c
+                                        command += c
+                                        i += 1
+                                    else:
+                                        c = ""
 
                                 backspace(len(ps))
                                 click.echo(c, nl=False)
