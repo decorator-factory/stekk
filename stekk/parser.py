@@ -200,7 +200,7 @@ class WhileExpr(Expr):
         self.body = body
 
     def get_value(self, vm):
-        ret = Const.get("$N")
+        ret = Const.get("N")
         while get_value(self.condition, vm) == 1:
             ret = get_value(self.body, vm)
         return ret
