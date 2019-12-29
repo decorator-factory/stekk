@@ -1,6 +1,14 @@
 # stekk
 Stekk v1. Stack-based esoteric language implemented in Python
 
+# Requirements
+
+```
+python >= 3.4
+lark-parser
+click
+```
+
 # How to use?
 
 Open the interactive console:
