@@ -44,6 +44,7 @@ class Expr(Stmt):
 
 
 def get_value(x, vm):
+
     if isinstance(x, Expr):
         return x.get_value(vm)
     else:
@@ -131,8 +132,13 @@ class CodeBlock(Expr):
         return bool(self.stmts)
 
     def run(self, vm):
+        result = Const.get("N")
         for stmt in self.stmts:
-            stmt.run(vm)
+            result = stmt.run(vm)
+        if result is None:
+            return Const.get("N")
+        else:
+            return result
 
     __repr__ = lambda self: "{" + joinr('; ', self.stmts) + "}"
 
@@ -203,7 +209,10 @@ class WhileExpr(Expr):
         ret = Const.get("N")
         while get_value(self.condition, vm) == 1:
             ret = get_value(self.body, vm)
-        return ret
+        if ret is None:
+            return Const.get("N")
+        else:
+            return ret
 
     __repr__ = lambda self: "While({0.condition})=>({0.body})".format(self)
 
@@ -281,7 +290,7 @@ class StmtAssign(Stmt):
     def run(self, vm):
         value = get_value(self.expr, vm)
         if value is None:
-            raise ValueError(f"value of {self.expr} in {self} is None")
+            value = Const.get("N")
         self.lvalue.assign(vm, value)
 
     __repr__ = lambda self: f"Assign({self.lvalue})=({self.expr})"
