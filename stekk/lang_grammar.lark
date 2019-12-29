@@ -1,0 +1,58 @@
+start : (stmt ";")* stmt?
+
+expr_index.1 : (expr_index | expr) "#" expr "#"?
+lvalue_index : expr "#" expr
+?lvalue :   name -> lvalue_name
+          | lvalue_index
+
+// expressions
+
+NAME : /(?!if)(?!while)[a-zA-Z<>+\-*\/~\^&|%?_'=!][a-zA-Z0-9<>+\-*\/~\^&|%?_'=!]*/
+name : NAME -> name
+const : "$" name
+fcall.0 : "." expr
+expr_tuple : "(" "," ")" | "(" expr ("," | ("," expr)+) ")"
+expr_list : "[" (expr ("," expr)*|) "]"
+range.1 : expr ".." expr // to avoid collision with "expr1 fcall(fcall(expr2)"
+code_block : "{" (stmt ";")* (stmt|) "}"
+stack : "(" expr* ")"
+expr_ifelse : "if" expr expr "else" expr
+expr_while: "while" expr "do" expr
+at_expr : "@" expr
+
+?expr :   expr_ifelse
+        | expr_while
+        | expr_index
+        | at_expr
+        | string
+        | range
+        | number
+        | name
+        | const
+        | stack
+        | expr_tuple
+        | expr_list
+        | fcall
+        | code_block
+
+
+// statements
+
+?stmt :   expr
+        | stmt_assign
+
+stmt_assign : lvalue ":=" expr
+
+COMMENT: ";" ";" /.*/
+%ignore COMMENT
+
+%import common.ESCAPED_STRING
+string: ESCAPED_STRING
+
+?number.1 :   SIGNED_INT -> int
+            | SIGNED_FLOAT -> float
+SIGNED_INT: /[-+]?(0|[1-9][0-9]*)/
+SIGNED_FLOAT: /[-+]?(0|[1-9][0-9]*)\.[0-9]+/
+
+%import common.WS
+%ignore WS

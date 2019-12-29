@@ -1,0 +1,22 @@
+array = [10, 12, 13, 1, 7, 9, 2, 3, 5, 8, 3, 16, 7, 1];
+
+(
+    (0..(array .len 1 .sub))
+    {
+        i = ();
+        (
+            (i..(array .len 1 .sub))
+            {
+                j = ();
+                if (array<j> array<i> .lt) .{
+                    array<i> = (array<i> array<j>);
+                    array<j> = ();
+                } else .{}
+            }
+            .foreach
+        )
+    }
+    .foreach
+);
+
+(array .println);
