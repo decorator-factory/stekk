@@ -7,8 +7,8 @@ lvalue_index : expr "#" expr
 
 // expressions
 
-NAME : /(?!if)(?!while)[a-zA-Z<>+\-*\/~\^&|%?_'=!][a-zA-Z0-9<>+\-*\/~\^&|%?_'=!]*/
-name : NAME -> name
+NAME : /[a-zA-Z<>+\-*\/~\^&|%?_'=!][a-zA-Z0-9<>+\-*\/~\^&|%?_'=!]*/
+name.1 : NAME -> name
 const : "$" name
 fcall.0 : "." expr
 expr_tuple : "(" "," ")" | "(" expr ("," | ("," expr)+) ")"
