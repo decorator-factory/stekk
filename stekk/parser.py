@@ -215,6 +215,9 @@ class Const(Expr):
 
     __repr__ = lambda self: "$" + self.name
 
+    def __bool__(self):
+        return self.name != "N"
+
     @staticmethod
     def get(name, desc=""):
         if name in Const.const:
