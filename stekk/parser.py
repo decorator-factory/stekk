@@ -167,7 +167,7 @@ class IfElseExpr(Expr):
             return get_value(self.branch_else, vm)
 
 
-    __repr__ = lambda self: "If({0.condition})=>({0.branch_then})/({0.branch_else})".format(self)
+    __repr__ = lambda self: "(if {0.condition} {0.branch_then} else {0.branch_else})".format(self)
 
     def str_rec(self, depth=0, indent="    "):
         prefix = depth * indent
@@ -196,7 +196,7 @@ class WhileExpr(Expr):
         prefix = depth * indent
         cond = str_rec(self.condition, depth, indent)[len(prefix):]
         bod = str_rec(self.body, depth + 1, indent)
-        return prefix + "while " + cond + " => \n" + bod
+        return prefix + "while " + cond + " \n" + bod
 
 ["Constants"]
 
