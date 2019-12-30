@@ -22,7 +22,7 @@ def vm_builtin_as(name):
         return func
     return wrapper
 
-def vm_onstack(n, addto=vm_builtins, name=None):
+def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
     """
     @vm_onstack(2)
     def moddiv(self, b, a):
@@ -40,7 +40,7 @@ def vm_onstack(n, addto=vm_builtins, name=None):
     def wrapper(func):
         def wrapped(vm):
             vm.register_operation()
-            args = [vm.stack_pop() if vm.stack else none for _ in range(n)]
+            args = [vm.stack_pop() for _ in range(n)]
             ret = func(vm, *args)
 
             # If the function doesn't return anything,
@@ -48,6 +48,8 @@ def vm_onstack(n, addto=vm_builtins, name=None):
             if ret:
                 for i in ret:
                     vm.stack_push(i)
+            elif (not trustme):
+                vm.stack_push(none)
 
         addto[name or func.__name__] = wrapped
         return wrapped
@@ -70,6 +72,8 @@ class VM:
 
     def register_operation(self):
         self.history.append(self.stack.copy())
+        if len(self.history) >= 32:
+            self.history = self.history[-32:]
         self.operations += 1
         if self.operations > self.operations_limit:
             raise Exception("Too many operations")
@@ -101,9 +105,6 @@ class VM:
 
     @vm_onstack(2, name="/i")
     def idiv(self, b, a): return [a // b]
-
-    @vm_onstack(1)
-    def copy(self, a): return [a, a]
 
     @vm_onstack(2, name="=")
     def eq(self, b, a): return [int(a == b)]
@@ -140,26 +141,6 @@ class VM:
             else:
                 grabbed.append(x)
 
-    @vm_onstack(1)
-    def rev(self, x):
-        return [x[::-1]]
-
-    @vm_onstack(1)
-    def len(self, x):
-        return [len(x)]
-
-    @vm_onstack(1)
-    def sum(self, x):
-        return [sum(x)]
-
-    @vm_onstack(2, name="+=")
-    def push(self, x, lst):
-        return [lst+[x]];
-
-    @vm_onstack(1)
-    def last(self, lst):
-        return [lst[-1]];
-
     @vm_onstack(2)
     def str_join(self, string, lst):
         return [string.join(map(str, lst))]
@@ -188,21 +169,57 @@ class VM:
     def println(self, a):
         self.printer(a, end='\n')
 
-
-    ["Stack things"]
+    ["Containers"]
 
     @vm_onstack(2)
     def contains(self, item, container):
         return [int(item in container)]
 
-    @vm_onstack(1, name="!")
-    def rem(self, a):
+    @vm_onstack(1)
+    def rev(self, x):
+        return [x[::-1]]
+
+    @vm_onstack(1)
+    def len(self, x):
+        return [len(x)]
+
+    @vm_onstack(1)
+    def sum(self, x):
+        return [sum(x)]
+
+    @vm_onstack(2)
+    def push(self, x, lst):
+        return [lst+[x]]
+
+    @vm_onstack(1)
+    def last(self, lst):
+        return [lst[-1]]
+
+    ["Stack things"]
+
+    @vm_onstack(1, name="?")
+    def drop_if_none(self, a):
+        return [] if (a == none) else [a]
+
+    @vm_onstack(1)
+    def drop(self, a) -> 'a -- ':
         return []
 
     @vm_onstack(2)
-    def swap(self, a, b):
-        # (1 2 3 .swap) -> (1 3 2)
+    def swap(self, a, b) -> 'a b -- b a':
         return [a, b]
+
+    @vm_onstack(1)
+    def dup(self, a) -> 'a -- a a':
+        return [a, a]
+
+    @vm_onstack(2)
+    def over(self, b, a) -> 'a b -- a b a':
+        return [a, b, a]
+
+    @vm_onstack(3)
+    def rot(self, c, b, a) -> 'a b c -- c b a':
+        return [c, b, a]
 
     @vm_onstack(0)
     def __stack(self):
@@ -311,4 +328,7 @@ class VM:
 
     def stack_pop(self):
         self.register_operation()
-        return self.stack.pop()
+        if self.stack:
+            return self.stack.pop()
+        else:
+            return none
