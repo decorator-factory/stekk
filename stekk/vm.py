@@ -5,6 +5,8 @@ from .parser import Expr, Stmt,\
                     Lvalue, LvalueName, LvalueIndex,\
                     get_value
 
+from .util import withrepr
+
 from .parser import parse
 
 none = Const.get("N")
@@ -51,7 +53,13 @@ def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
             elif (not trustme):
                 vm.stack_push(none)
 
-        addto[name or func.__name__] = wrapped
+        nonlocal name
+        if name is None:
+            name = func.__name__
+
+        wrapped.name = name
+        wrapped = withrepr(lambda f: f"(built-in function {f.name})")(wrapped)
+        addto[name] = wrapped
         return wrapped
     return wrapper
 
