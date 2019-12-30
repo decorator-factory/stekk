@@ -15,7 +15,6 @@ const : "$" name
 expr_ifelse : "if" expr expr "else" expr
 expr_index.1 : (expr_index | expr) "#" expr "#"?
 expr_list : "[" (expr ("," expr)*|) "]"
-expr_tuple : "(" "," ")" | "(" expr ("," | ("," expr)+) ")"
 expr_while: "while" expr "do" expr
 fcall.0 : "." expr
 range.1 : expr ".." expr // to avoid collision with "expr1 fcall(fcall(expr2)"
@@ -27,7 +26,6 @@ stack : "(" expr* ")"
         | expr_ifelse
         | expr_index
         | expr_list
-        | expr_tuple
         | expr_while
         | fcall
         | name

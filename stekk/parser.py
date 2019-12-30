@@ -71,25 +71,6 @@ class ListExpr(Expr):
         return output
 
 
-class TupleExpr(Expr):
-    def __init__(self, exprs):
-        self.exprs = exprs
-
-    def get_value(self, vm):
-        return tuple((get_value(x, vm) for x in self.exprs))
-
-    __repr__ = lambda self: f"Tuple{self.exprs}"
-
-    def str_rec(self, depth=0, indent="    "):
-        prefix = indent * depth
-        output = prefix + "(\n"
-        for expr in self.exprs:
-            output += str_rec(expr, depth + 1, indent) + ",\n"
-        output += prefix + ")"
-        output = output.replace(",\n"+prefix+")", prefix+")")
-        return output
-
-
 class NameExpr(Expr):
     def __init__(self, name):
         self.name = name
@@ -432,7 +413,6 @@ class Tranny(Transformer):
     float = float
 
     expr_list = STAR(ListExpr)
-    expr_tuple = STAR(TupleExpr)
 
     range = RangeExpr
 
