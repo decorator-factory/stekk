@@ -110,7 +110,7 @@ def console(vm=None):
                                 else:
                                     possible = [name for name in possible
                                                 if name.startswith(subs + c)]
-                                    if c.isspace() or c.isprintable():
+                                    if c == " " or c.isprintable():
                                         subs += c
                                         command += c
                                         i += 1
