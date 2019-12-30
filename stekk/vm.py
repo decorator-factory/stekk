@@ -9,6 +9,8 @@ from .util import withrepr
 
 from .parser import parse
 
+import inspect
+
 none = Const.get("N")
 
 vm_builtins = {}
@@ -23,6 +25,17 @@ def vm_builtin_as(name):
         vm_builtins[name] = func
         return func
     return wrapper
+
+def builtin_function_repr(original_function):
+    def repr_(func):
+        spec = inspect.getfullargspec(original_function)
+        arg_names = spec.args[1:][::-1]
+        args_string = "(" + ", ".join(arg_names[::-1]) + ")"
+        stack_diagram = spec.annotations.get("return", "")
+        stack_diagram = f" : {stack_diagram}" if stack_diagram else ""
+        return f"built-in function {func.name} {args_string}{stack_diagram}"
+    return repr_
+
 
 def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
     """
@@ -45,8 +58,6 @@ def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
             args = [vm.stack_pop() for _ in range(n)]
             ret = func(vm, *args)
 
-            # If the function doesn't return anything,
-            # don't add anything to stack
             if ret:
                 for i in ret:
                     vm.stack_push(i)
@@ -58,7 +69,8 @@ def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
             name = func.__name__
 
         wrapped.name = name
-        wrapped = withrepr(lambda f: f"(built-in function {f.name})")(wrapped)
+
+        wrapped = withrepr(builtin_function_repr(func))(wrapped)
         addto[name] = wrapped
         return wrapped
     return wrapper
@@ -206,7 +218,7 @@ class VM:
     ["Stack things"]
 
     @vm_onstack(1, name="?")
-    def drop_if_none(self, a):
+    def drop_if_none(self, a) -> '$N -- ; a -- a':
         return [] if (a == none) else [a]
 
     @vm_onstack(1)
