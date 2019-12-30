@@ -132,13 +132,10 @@ class CodeBlock(Expr):
         return bool(self.stmts)
 
     def run(self, vm):
-        result = Const.get("N")
+        result = None
         for stmt in self.stmts:
             result = stmt.run(vm)
-        if result is None:
-            return Const.get("N")
-        else:
-            return result
+        return result
 
     __repr__ = lambda self: "{" + joinr('; ', self.stmts) + "}"
 
@@ -162,8 +159,6 @@ class Stack(Expr):
                 vm.stack_push(value)
         if vm.stack:
             return vm.stack.pop()
-        else:
-            return Const.get("N")
 
     __repr__ = lambda self: f"Stack({joinr(' ', self.exprs)})"
 
