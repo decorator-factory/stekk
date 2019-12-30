@@ -7,7 +7,7 @@ lvalue_index : expr "#" expr
 
 // expressions
 
-NAME : /[a-zA-Z<>+\-*\/~\^&|%?_'=!][a-zA-Z0-9<>+\-*\/~\^&|%?_'=!]*/
+NAME : /(?!\d)[a-zA-Z<>+\-*\/~\^&|%?_'=!]+/
 name.1 : NAME -> name
 const : "$" name
 fcall.0 : "." expr
