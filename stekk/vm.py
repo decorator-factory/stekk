@@ -17,11 +17,12 @@ vm_builtins = {}
 
 def vm_builtin(func):
     """add a function to VM builtins"""
-    vm_builtins[func.__name__] = func
-    return func
+    return vm_builtin_as(func.__name__)(func)
 
 def vm_builtin_as(name):
     def wrapper(func):
+        func.name = name
+        func = withrepr(builtin_function_repr(func))(func)
         vm_builtins[name] = func
         return func
     return wrapper
@@ -29,8 +30,8 @@ def vm_builtin_as(name):
 def builtin_function_repr(original_function):
     def repr_(func):
         spec = inspect.getfullargspec(original_function)
-        arg_names = spec.args[1:][::-1]
-        args_string = "(" + ", ".join(arg_names[::-1]) + ")"
+        arg_names = spec.args[1:]
+        args_string = "(" + ", ".join(arg_names) + ")"
         stack_diagram = spec.annotations.get("return", "")
         stack_diagram = f" : {stack_diagram}" if stack_diagram else ""
         return f"built-in function {func.name} {args_string}{stack_diagram}"
@@ -55,7 +56,7 @@ def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
     def wrapper(func):
         def wrapped(vm):
             vm.register_operation()
-            args = [vm.stack_pop() for _ in range(n)]
+            args = reversed([vm.stack_pop() for _ in range(n)])
             ret = func(vm, *args)
 
             if ret:
@@ -99,10 +100,10 @@ class VM:
             raise Exception("Too many operations")
 
     @vm_onstack(2, name="or")
-    def _or(self, b, a): return [int(a or b)]
+    def _or(self, a, b): return [int(a or b)]
 
     @vm_onstack(2, name="and")
-    def _and(self, b, a): return [int(a and b)]
+    def _and(self, a, b): return [int(a and b)]
 
     @vm_onstack(1)
     def parse_int(self, x):
@@ -112,45 +113,45 @@ class VM:
             return [none]
 
     @vm_onstack(2, name="+")
-    def add(self, b, a): return [a + b]
+    def add(self, a, b): return [a + b]
 
     @vm_onstack(2, name="-")
-    def sub(self, b, a): return [a - b]
+    def sub(self, a, b): return [a - b]
 
     @vm_onstack(2, name="*")
-    def mul(self, b, a): return [a * b]
+    def mul(self, a, b): return [a * b]
 
     @vm_onstack(2, name="/f")
-    def fdiv(self, b, a): return [a / b]
+    def fdiv(self, a, b): return [a / b]
 
     @vm_onstack(2, name="/i")
-    def idiv(self, b, a): return [a // b]
+    def idiv(self, a, b): return [a // b]
 
     @vm_onstack(2, name="=")
-    def eq(self, b, a): return [int(a == b)]
+    def eq(self, a, b): return [int(a == b)]
 
     @vm_onstack(2, name="!=")
-    def neq(self, b, a): return [int(a != b)]
+    def neq(self, a, b): return [int(a != b)]
 
     @vm_onstack(2, name="<")
-    def lt(self, b, a): return [int(a < b)]
+    def lt(self, a, b): return [int(a < b)]
 
     @vm_onstack(2, name=">")
-    def gt(self, b, a): return [int(a > b)]
+    def gt(self, a, b): return [int(a > b)]
 
     @vm_onstack(2, name="<=")
-    def le(self, b, a): return [int(a <= b)]
+    def le(self, a, b): return [int(a <= b)]
 
     @vm_onstack(2, name=">=")
-    def ge(self, b, a): return [int(a >= b)]
+    def ge(self, a, b): return [int(a >= b)]
 
     @vm_onstack(1)
-    def bloat(self, lst):
+    def bloat(self, container):
         # opposite of grab
-        return [none, *lst]
+        return [none, *container]
 
     @vm_builtin
-    def grab(self):
+    def grab(self) -> '$N a b c... -- [..., c, b, a]':
         # $N 1 2 3 4 -> [4 3 2 1]
         grabbed = []
         while True:
@@ -162,7 +163,7 @@ class VM:
                 grabbed.append(x)
 
     @vm_onstack(2)
-    def str_join(self, string, lst):
+    def str_join(self, string, list_):
         return [string.join(map(str, lst))]
 
     ["Strings"]
@@ -172,8 +173,8 @@ class VM:
         return [ord(c) for c in string]
 
     @vm_onstack(1, name="chr")
-    def chr_(self, n):
-        return [chr(n)]
+    def chr_(self, code):
+        return [chr(code)]
 
     ["I/O"]
 
@@ -182,38 +183,38 @@ class VM:
         return [self.reader()]
 
     @vm_onstack(1)
-    def print(self, a):
-        self.printer(a, end='')
+    def print(self, x):
+        self.printer(x, end='')
 
     @vm_onstack(1)
-    def println(self, a):
-        self.printer(a, end='\n')
+    def println(self, x):
+        self.printer(x, end='\n')
 
     ["Containers"]
 
     @vm_onstack(2)
-    def contains(self, item, container):
+    def contains(self, container, item):
         return [int(item in container)]
 
     @vm_onstack(1)
-    def rev(self, x):
-        return [x[::-1]]
+    def rev(self, container):
+        return [container[::-1]]
 
-    @vm_onstack(1)
-    def len(self, x):
-        return [len(x)]
+    @vm_onstack(1, name="len")
+    def len_(self, container):
+        return [len(container)]
 
-    @vm_onstack(1)
-    def sum(self, x):
-        return [sum(x)]
+    @vm_onstack(1, name="sum")
+    def sum_(self, container):
+        return [sum(container)]
 
     @vm_onstack(2)
-    def push(self, x, lst):
-        return [lst+[x]]
+    def push(self, x, list_):
+        return [list_ + [x]]
 
     @vm_onstack(1)
-    def last(self, lst):
-        return [lst[-1]]
+    def last(self, container):
+        return [container[-1]]
 
     ["Stack things"]
 
@@ -227,18 +228,18 @@ class VM:
 
     @vm_onstack(2)
     def swap(self, a, b) -> 'a b -- b a':
-        return [a, b]
+        return [b, a]
 
     @vm_onstack(1)
     def dup(self, a) -> 'a -- a a':
         return [a, a]
 
     @vm_onstack(2)
-    def over(self, b, a) -> 'a b -- a b a':
+    def over(self, a, b) -> 'a b -- a b a':
         return [a, b, a]
 
     @vm_onstack(3)
-    def rot(self, c, b, a) -> 'a b c -- c b a':
+    def rot(self, a, b, c) -> 'a b c -- c b a':
         return [c, b, a]
 
     @vm_onstack(0)
@@ -258,7 +259,7 @@ class VM:
         return [[CodeBlock([stmt]) for stmt in code.stmts]]
 
     @vm_onstack(2)
-    def set_default(self, value, name):
+    def set_default(self, name, value):
         if name not in self.names:
             self.names[name] = value
 
