@@ -1,6 +1,5 @@
 start : (stmt ";")* stmt?
 
-expr_index.1 : (expr_index | expr) "#" expr "#"?
 lvalue_index : expr "#" expr
 ?lvalue :   name -> lvalue_name
           | lvalue_index
@@ -9,31 +8,33 @@ lvalue_index : expr "#" expr
 
 NAME : /(?!\d)[a-zA-Z<>+\-*\/~\^&|%?_'=!]+/
 name.1 : NAME -> name
-const : "$" name
-fcall.0 : "." expr
-expr_tuple : "(" "," ")" | "(" expr ("," | ("," expr)+) ")"
-expr_list : "[" (expr ("," expr)*|) "]"
-range.1 : expr ".." expr // to avoid collision with "expr1 fcall(fcall(expr2)"
-code_block : "{" (stmt ";")* (stmt|) "}"
-stack : "(" expr* ")"
-expr_ifelse : "if" expr expr "else" expr
-expr_while: "while" expr "do" expr
-at_expr : "@" expr
 
-?expr :   expr_ifelse
-        | expr_while
-        | expr_index
-        | at_expr
-        | string
-        | range
-        | number
-        | name
-        | const
-        | stack
-        | expr_tuple
-        | expr_list
-        | fcall
+at_expr : "@" expr
+code_block : "{" (stmt ";")* (stmt|) "}"
+const : "$" name
+expr_ifelse : "if" expr expr "else" expr
+expr_index.1 : (expr_index | expr) "#" expr "#"?
+expr_list : "[" (expr ("," expr)*|) "]"
+expr_tuple : "(" "," ")" | "(" expr ("," | ("," expr)+) ")"
+expr_while: "while" expr "do" expr
+fcall.0 : "." expr
+range.1 : expr ".." expr // to avoid collision with "expr1 fcall(fcall(expr2)"
+stack : "(" expr* ")"
+
+?expr :   at_expr
         | code_block
+        | const
+        | expr_ifelse
+        | expr_index
+        | expr_list
+        | expr_tuple
+        | expr_while
+        | fcall
+        | name
+        | number
+        | range
+        | stack
+        | string
 
 
 // statements
