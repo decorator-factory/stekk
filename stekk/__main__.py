@@ -1,4 +1,5 @@
 from . import console, loadf
+from .parser import StekkSyntaxError
 import sys
 
 if len(sys.argv) == 1:
@@ -9,6 +10,8 @@ elif len(sys.argv) == 2:
         vm = loadf(filename)
     except FileNotFoundError:
         print("File not found:", filename)
+    except StekkSyntaxError as e:
+        print(e.error)
     else:
         vm.run()
         console(vm)
