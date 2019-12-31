@@ -1,7 +1,8 @@
 # from Stackoverflow
 
 import functools
-class StrWrapper(object):
+
+class StrWrapper:
     def __init__(self, repr_, func):
         self._repr = repr_
         self._func = func
@@ -17,3 +18,4 @@ def withrepr(strfun):
     def _wrap(func):
         return StrWrapper(strfun, func)
     return _wrap
+
