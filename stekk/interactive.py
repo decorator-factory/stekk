@@ -175,4 +175,4 @@ def console(vm=None):
             except KeyboardInterrupt as e:
                 continue
             except Exception as e:
-                click.secho(f"{e.__class__.__name__}: {e}", fg='bright_red')
+                click.secho(f"{e.__class__.__name__}: {e.args}", fg='bright_red')
