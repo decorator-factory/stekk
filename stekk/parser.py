@@ -202,7 +202,7 @@ class WhileExpr(Expr):
 
 class Const(Expr):
     const = {}
-    def __init__(self, name, desc=""):
+    def __init__(self, name, desc="", truthy=True):
         if isinstance(name, NameExpr):
             self.name = name.name
         else:
@@ -212,11 +212,12 @@ class Const(Expr):
 
         Const.const[self.name] = self
         self.description = desc
+        self.truthy = bool(truthy)
 
     __repr__ = lambda self: "$" + self.name
 
     def __bool__(self):
-        return self.name != "N"
+        return self.truthy
 
     @staticmethod
     def get(name, desc=""):
@@ -234,7 +235,10 @@ class Const(Expr):
         else:
             return other.name == self.name
 
-Const("N", "null")
+Const("N", "null", truthy=False)
+Const("E", "error", truthy=False)
+Const("T", "typeerror", truthy=False)
+Const("OK", "ok")
 
 
 ["Assignment"]
