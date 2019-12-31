@@ -6,7 +6,7 @@ lvalue_index : (lvalue_index | expr) "#" expr
 
 // expressions
 
-NAME : /(?!\d)[a-zA-Z<>+\-*\/~\^&|%?_'=!]+/
+NAME : /(?!\d)[a-zA-Z0-9<>+\-*\/~\^&|%?_'=!]+/
 name : NAME -> name
 
 at_expr : "@" expr
