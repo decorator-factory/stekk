@@ -314,7 +314,7 @@ class VM:
 
     @vm_onstack(1, name="--")
     def codesplit(self, code: CodeBlock):
-        """convert a code block into a list of statements"""
+        """convert a code block into a list of one-statement code blocks"""
         return [[CodeBlock([stmt]) for stmt in code.stmts]]
 
     ["Functional stuff"]
