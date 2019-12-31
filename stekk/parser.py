@@ -20,10 +20,7 @@ class Stmt:
 
     def __getitem__(self, index):
         if isinstance(index, Const):
-            if hasattr(self, index.name):
-                return getattr(self, index.name)
-            else:
-                return Const.get("N")
+            return get_value(getattr(self, index.name))
         else:
             raise TypeError(index)
 
@@ -44,7 +41,6 @@ class Expr(Stmt):
 
 
 def get_value(x, vm):
-
     if isinstance(x, Expr):
         return x.get_value(vm)
     else:
@@ -102,6 +98,7 @@ class FcallExpr(Expr):
 class CodeBlock(Expr):
     def __init__(self, stmts):
         self.stmts = stmts
+        self.help = ""
 
     def get_value(self, vm):
         return self
@@ -243,7 +240,7 @@ Const("OK", "ok")
 
 ["Assignment"]
 
-class Lvalue:
+class Lvalue(Expr):
     def assign(self, vm, value):
         raise NotImplementedError
 
