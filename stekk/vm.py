@@ -138,7 +138,7 @@ class VM:
             return [T]
 
         try:
-            return [int(x)]
+            return [int(source)]
         except ValueError:
             return [error]
 
@@ -336,6 +336,13 @@ class VM:
             self.stack_push(item)
             self.function_call(function)
 
+    ["Metaprogramming"]
+
+    @vm_onstack(1, name="eval")
+    def eval_(self, value):
+        """compute an expression object"""
+        return [get_value(value, self)]
+
 
     ["region stuff"]
 
@@ -388,7 +395,6 @@ class VM:
                 self.last_result = stmt.run(self)
             else:
                 self.last_result = stmt
-            
 
     def assign_name(self, name, value):
         self.register_operation()
