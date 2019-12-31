@@ -70,7 +70,8 @@ def vm_onstack(n, name=None, trustme=True):
             args = reversed([vm.stack_pop() for _ in range(n)])
             try:
                 ret = func(vm, *args)
-            except TypeError:
+            except TypeError as e:
+                print(e)
                 vm.stack_push(type_error)
                 return
             except AttributeError:
@@ -330,7 +331,7 @@ class VM:
         return [code_block]
 
     @vm_onstack(2)
-    def foreach(self, function, iterable):
+    def foreach(self, iterable, function):
         for item in iterable:
             self.stack_push(item)
             self.function_call(function)
