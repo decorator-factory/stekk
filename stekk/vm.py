@@ -22,7 +22,7 @@ def ensure_types(*value_types):
             return type_error
     return ok
 
-def ensure_numbers(values):
+def ensure_numbers(*values):
     return ensure_types(*((value, (int, float)) for value in values))
 
 vm_builtins = {}
@@ -34,9 +34,10 @@ def vm_builtin(func):
 def vm_builtin_as(name):
     def wrapper(func):
         func.name = name
-        func = withrepr(builtin_function_repr(func))(func)
-        vm_builtins[name] = func
-        return func
+        new_func = withrepr(builtin_function_repr(func))(func)
+        new_func.help = func.__doc__ or ""
+        vm_builtins[name] = new_func
+        return new_func
     return wrapper
 
 def builtin_function_repr(original_function):
@@ -44,13 +45,11 @@ def builtin_function_repr(original_function):
         spec = inspect.getfullargspec(original_function)
         arg_names = spec.args[1:]
         args_string = "(" + ", ".join(arg_names) + ")"
-        stack_diagram = spec.annotations.get("return", "")
-        stack_diagram = f" : {stack_diagram}" if stack_diagram else ""
-        return f"built-in function {func.name} {args_string}{stack_diagram}"
+        return f"built-in function {func.name} {args_string}"
     return repr_
 
 
-def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
+def vm_onstack(n, name=None, trustme=True):
     """
     @vm_onstack(2)
     def moddiv(self, b, a):
@@ -74,6 +73,9 @@ def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
             except TypeError:
                 vm.stack_push(type_error)
                 return
+            except AttributeError:
+                vm.stack_push(type_error)
+                return
 
             if ret:
                 for i in ret:
@@ -88,7 +90,8 @@ def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
         wrapped.name = name
 
         wrapped = withrepr(builtin_function_repr(func))(wrapped)
-        addto[name] = wrapped
+        wrapped.help = func.__doc__ or ""
+        vm_builtins[name] = wrapped
         return wrapped
     return wrapper
 
@@ -195,7 +198,7 @@ class VM:
 
     @vm_onstack(2)
     def str_join(self, string, list_):
-        return [string.join(map(str, lst))]
+        return [string.join(map(str, list_))]
 
     ["Strings"]
 
@@ -228,7 +231,8 @@ class VM:
         return [int(item in container)]
 
     @vm_onstack(1)
-    def rev(self, container) -> '[a, b, ..., c, d] -- [d, c, ..., b, a]':
+    def rev(self, container):
+        """[a, b, ..., c, d] -- [d, c, ..., b, a]"""
         return [container[::-1]]
 
     @vm_onstack(1, name="len")
@@ -240,37 +244,45 @@ class VM:
         return [sum(container)]
 
     @vm_onstack(2)
-    def push(self, x, list_) -> '[..., a] b -- [..., a, b]':
+    def push(self, x, list_):
+        """[..., a] b -- [..., a, b]"""
         return [list_ + [x]]
 
     @vm_onstack(1)
-    def last(self, container) -> '[..., a] -- a':
+    def last(self, container):
+        """[..., a] -- a"""
         return [container[-1]]
 
     ["Stack things"]
 
     @vm_onstack(1, name="?")
-    def drop_if_none(self, a) -> '$N -- ; a -- a':
+    def drop_if_none(self, a):
+        """$N -- ; a -- a"""
         return [] if (a == none) else [a]
 
     @vm_onstack(1)
-    def drop(self, a) -> 'a -- ':
+    def drop(self, a):
+        """a -- """
         return []
 
     @vm_onstack(2)
-    def swap(self, a, b) -> 'a b -- b a':
+    def swap(self, a, b):
+        """a b -- b a"""
         return [b, a]
 
     @vm_onstack(1)
-    def dup(self, a) -> 'a -- a a':
+    def dup(self, a):
+        """a -- a a"""
         return [a, a]
 
     @vm_onstack(2)
-    def over(self, a, b) -> 'a b -- a b a':
+    def over(self, a, b):
+        """a b -- a b a"""
         return [a, b, a]
 
     @vm_onstack(3)
-    def rot(self, a, b, c) -> 'a b c -- c b a':
+    def rot(self, a, b, c):
+        """a b c -- c b a"""
         return [c, b, a]
 
     @vm_onstack(0)
@@ -279,10 +291,12 @@ class VM:
 
     @vm_onstack(1)
     def as_src(self, code):
+        """convert code block to stekk source"""
         return [code.str_rec()]
 
     @vm_onstack(2, name="++")
     def concat(self, left, right):
+        """create a new container by gluing two containers together"""
         if isinstance(left, CodeBlock):
             return [ensure_types(
                         (left, CodeBlock),
@@ -295,14 +309,21 @@ class VM:
 
     @vm_onstack(1, name="--")
     def codesplit(self, code: CodeBlock):
+        """convert a code block into a list of statements"""
         return [[CodeBlock([stmt]) for stmt in code.stmts]]
 
-    @vm_onstack(2)
-    def set_default(self, name, value):
-        if name not in self.names:
-            self.names[name] = value
-
     ["Functional stuff"]
+
+    @vm_onstack(1, name="help")
+    def help_(self, function):
+        return [function.help]
+
+    @vm_onstack(2, name="set_help")
+    def set_help(self, code_block, string):
+        if not isinstance(code_block, CodeBlock):
+            raise TypeError
+        code_block.help = string
+        return [code_block]
 
     @vm_onstack(2)
     def foreach(self, function, iterable):
