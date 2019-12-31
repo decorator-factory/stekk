@@ -98,7 +98,8 @@ def console(vm=None):
                                                 vm.names[name],
                                                 (
                                                     function_t,
-                                                    stekk.parser.CodeBlock
+                                                    stekk.parser.CodeBlock,
+                                                    stekk.util.StrWrapper
                                                 ))]
                             while len(possible) > 1:
                                 ps = " " + " ".join(possible)
