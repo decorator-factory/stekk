@@ -12,6 +12,18 @@ from .parser import parse
 import inspect
 
 none = Const.get("N")
+error = Const.get("E")
+type_error = Const.get("T")
+ok = Const.get("OK")
+
+def ensure_types(*value_types):
+    for (value, type_) in value_types:
+        if not isinstance(value, type_):
+            return type_error
+    return ok
+
+def ensure_numbers(values):
+    return ensure_types(*((value, (int, float)) for value in values))
 
 vm_builtins = {}
 
@@ -57,7 +69,11 @@ def vm_onstack(n, addto=vm_builtins, name=None, trustme=True):
         def wrapped(vm):
             vm.register_operation()
             args = reversed([vm.stack_pop() for _ in range(n)])
-            ret = func(vm, *args)
+            try:
+                ret = func(vm, *args)
+            except TypeError:
+                vm.stack_push(type_error)
+                return
 
             if ret:
                 for i in ret:
@@ -100,59 +116,74 @@ class VM:
             raise Exception("Too many operations")
 
     @vm_onstack(2, name="or")
-    def _or(self, a, b): return [int(a or b)]
+    def _or(self, a, b):
+        return [int(a or b)]
 
     @vm_onstack(2, name="and")
-    def _and(self, a, b): return [int(a and b)]
+    def _and(self, a, b):
+        return [int(a and b)]
 
     @vm_onstack(1)
-    def parse_int(self, x):
+    def parse_int(self, source):
+        T = ensure_types((source, (str, float, int)))
+        if not T:
+            return [T]
+
         try:
             return [int(x)]
         except ValueError:
-            return [none]
+            return [error]
 
     @vm_onstack(2, name="+")
-    def add(self, a, b): return [a + b]
+    def add(self, a, b):
+        return [ensure_numbers(a, b) and a + b]
 
     @vm_onstack(2, name="-")
-    def sub(self, a, b): return [a - b]
+    def sub(self, a, b):
+        return [ensure_numbers(a, b) and a - b]
 
     @vm_onstack(2, name="*")
-    def mul(self, a, b): return [a * b]
+    def mul(self, a, b):
+        return [a * b]
 
     @vm_onstack(2, name="/f")
-    def fdiv(self, a, b): return [a / b]
+    def fdiv(self, a, b):
+        return [a / b]
 
     @vm_onstack(2, name="/i")
-    def idiv(self, a, b): return [a // b]
+    def idiv(self, a, b):
+        return [a // b]
 
     @vm_onstack(2, name="=")
-    def eq(self, a, b): return [int(a == b)]
+    def eq(self, a, b):
+        return [int(a == b)]
 
     @vm_onstack(2, name="!=")
-    def neq(self, a, b): return [int(a != b)]
+    def neq(self, a, b):
+        return [int(a != b)]
 
     @vm_onstack(2, name="<")
-    def lt(self, a, b): return [int(a < b)]
+    def lt(self, a, b):
+        return [int(a < b)]
 
     @vm_onstack(2, name=">")
-    def gt(self, a, b): return [int(a > b)]
+    def gt(self, a, b):
+        return [int(a > b)]
 
     @vm_onstack(2, name="<=")
-    def le(self, a, b): return [int(a <= b)]
+    def le(self, a, b):
+        return [int(a <= b)]
 
     @vm_onstack(2, name=">=")
-    def ge(self, a, b): return [int(a >= b)]
+    def ge(self, a, b):
+        return [int(a >= b)]
 
     @vm_onstack(1)
-    def bloat(self, container):
-        # opposite of grab
-        return [none, *container]
+    def bloat(self, container) -> '[a, ..., b, c] -- $N c b ... a':
+        return [none, *reversed(container)]
 
     @vm_builtin
     def grab(self) -> '$N a b c... -- [..., c, b, a]':
-        # $N 1 2 3 4 -> [4 3 2 1]
         grabbed = []
         while True:
             x = self.stack_pop()
@@ -197,7 +228,7 @@ class VM:
         return [int(item in container)]
 
     @vm_onstack(1)
-    def rev(self, container):
+    def rev(self, container) -> '[a, b, ..., c, d] -- [d, c, ..., b, a]':
         return [container[::-1]]
 
     @vm_onstack(1, name="len")
@@ -209,11 +240,11 @@ class VM:
         return [sum(container)]
 
     @vm_onstack(2)
-    def push(self, x, list_):
+    def push(self, x, list_) -> '[..., a] b -- [..., a, b]':
         return [list_ + [x]]
 
     @vm_onstack(1)
-    def last(self, container):
+    def last(self, container) -> '[..., a] -- a':
         return [container[-1]]
 
     ["Stack things"]
@@ -251,8 +282,16 @@ class VM:
         return [code.str_rec()]
 
     @vm_onstack(2, name="++")
-    def codecat(self, code_b: CodeBlock, code_a: CodeBlock):
-        return [CodeBlock(code_a.stmts + code_b.stmts)]
+    def concat(self, left, right):
+        if isinstance(left, CodeBlock):
+            return [ensure_types(
+                        (left, CodeBlock),
+                        (right, CodeBlock)
+                    ) and CodeBlock(left.stmts + right.stmts)]
+        else:
+            return [ensure_types(
+                        (left, (str, list))
+                    ) and left + right]
 
     @vm_onstack(1, name="--")
     def codesplit(self, code: CodeBlock):
