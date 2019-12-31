@@ -20,7 +20,7 @@ class Stmt:
 
     def __getitem__(self, index):
         if isinstance(index, Const):
-            return get_value(getattr(self, index.name))
+            return getattr(self, index.name)
         else:
             raise TypeError(index)
 
@@ -59,11 +59,12 @@ class ListExpr(Expr):
 
     def str_rec(self, depth=0, indent="    "):
         prefix = indent * depth
-        output = prefix + "[\n"
-        for expr in self.exprs:
-            output += str_rec(expr, depth + 1, indent) + ",\n"
-        output += prefix + "]"
-        output = output.replace(",\n"+prefix+")", prefix+")")
+        output = prefix + "["
+
+        output += ", ".join(str_rec(expr, depth + 1, "")
+                            for expr in self.exprs)
+
+        output += "]"
         return output
 
 
@@ -142,10 +143,10 @@ class Stack(Expr):
 
     def str_rec(self, depth=0, indent="    "):
         prefix = indent * depth
-        output = prefix + "(\n"
-        for expr in self.exprs:
-            output +=str_rec(expr, depth+1, indent) + "\n"
-        output += prefix + ")"
+        output = prefix + "("
+        output += " ".join(str_rec(expr, depth + 1, "")
+                           for expr in self.exprs)
+        output += ")"
         return output
 
 
@@ -169,9 +170,9 @@ class IfElseExpr(Expr):
     def str_rec(self, depth=0, indent="    "):
         prefix = depth * indent
         cond =str_rec(self.condition, depth, indent)[len(prefix):]
-        then =str_rec(self.branch_then, depth+1, indent)
-        elze =str_rec(self.branch_else, depth+1, indent)
-        return prefix + cond + " => \n" + then + "\n" + prefix + "else\n" + elze
+        then =str_rec(self.branch_then, depth, indent)[len(prefix):]
+        else_ =str_rec(self.branch_else, depth, indent)[len(prefix):]
+        return f"{prefix} if {cond} {then} else {else_}"
 
 class WhileExpr(Expr):
     def __init__(self, condition, body):
@@ -192,8 +193,8 @@ class WhileExpr(Expr):
     def str_rec(self, depth=0, indent="    "):
         prefix = depth * indent
         cond = str_rec(self.condition, depth, indent)[len(prefix):]
-        bod = str_rec(self.body, depth + 1, indent)
-        return prefix + "while " + cond + " \n" + bod
+        body = str_rec(self.body, depth, indent)[len(prefix):]
+        return f"{prefix} while {cond} {body}"
 
 ["Constants"]
 
@@ -209,7 +210,7 @@ class Const(Expr):
 
         Const.const[self.name] = self
         self.description = desc
-        self.truthy = bool(truthy)
+        self.truthy = truthy
 
     __repr__ = lambda self: "$" + self.name
 
@@ -217,11 +218,13 @@ class Const(Expr):
         return self.truthy
 
     @staticmethod
-    def get(name, desc=""):
+    def get(name):
+        if isinstance(name, NameExpr):
+            name = name.name
         if name in Const.const:
             return Const.const[name]
         else:
-            return Const(name, desc=desc)
+            return Const(name)
 
     def get_value(self, vm):
         return self
@@ -232,9 +235,9 @@ class Const(Expr):
         else:
             return other.name == self.name
 
-Const("N", "null", truthy=False)
-Const("E", "error", truthy=False)
-Const("T", "typeerror", truthy=False)
+Const("N", truthy=False)
+Const("E", truthy=False)
+Const("T", truthy=False)
 Const("OK", "ok")
 
 
@@ -278,7 +281,7 @@ class StmtAssign(Stmt):
     def str_rec(self, depth=0, indent="    "):
         prefix = indent * depth
         return prefix +str_rec(self.lvalue, depth, indent)[len(prefix):]\
-               + " = " +str_rec(self.expr, depth, indent)[len(prefix):]
+               + " := " +str_rec(self.expr, depth, indent)[len(prefix):]
 
 ["Items"]
 
@@ -297,7 +300,7 @@ class LvalueIndex(Lvalue):
     def str_rec(self, depth=0, indent="    "):
         prefix = depth * indent
         return prefix + str_rec(self.subexpr, depth, indent)[len(prefix):] \
-               + "[" + str_rec(self.index, depth, indent)[len(prefix):] + "]"
+               + "#" + str_rec(self.index, depth, indent)[len(prefix):]
 
 
 class GetitemExpr(Expr):
@@ -314,7 +317,7 @@ class GetitemExpr(Expr):
     def str_rec(self, depth=0, indent="    "):
         prefix = depth * indent
         return prefix + str_rec(self.subexpr, depth, indent)[len(prefix):] \
-               + "<" + str_rec(self.index, depth, indent)[len(prefix):] + ">"
+               + "#" + str_rec(self.index, depth, indent)[len(prefix):]
 
 
 class AtExpr(Expr):
@@ -353,7 +356,11 @@ class RangeExpr(Expr):
             yield left
             left += 1
 
-    __repr__ = lambda self: f"Range[{self.left}..{self.right}]"
+    def str_rec(self, depth=0, indent="    "):
+        prefix = indent * depth
+        return prefix + str_rec(self.left_expr) + ".." + str_rec(self.right_expr)
+
+    __repr__ = lambda self: f"Range[{self.left_expr}..{self.right_expr}]"
 
 
 
