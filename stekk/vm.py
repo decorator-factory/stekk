@@ -126,6 +126,10 @@ class VM:
     def _and(self, a, b):
         return [int(a and b)]
 
+    @vm_onstack(1, name="not")
+    def _not(self, x):
+        return [int(not x)]
+
     @vm_onstack(1)
     def parse_int(self, source):
         T = ensure_types((source, (str, float, int)))
