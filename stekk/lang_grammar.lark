@@ -1,6 +1,6 @@
 start : (stmt ";")* stmt?
 
-lvalue_index : expr "#" expr
+lvalue_index : (lvalue_index | expr) "#" expr
 ?lvalue :   name -> lvalue_name
           | lvalue_index
 
