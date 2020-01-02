@@ -403,7 +403,7 @@ class Tranny(Transformer):
     at_expr = AtExpr
     expr_index = GetitemExpr
 
-    fcall = FcallExpr
+    fcall = fcall_index = fcall_other = FcallExpr
 
     stack = STAR(Stack)
 
