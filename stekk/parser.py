@@ -104,9 +104,6 @@ class CodeBlock(Expr):
     def get_value(self, vm):
         return self
 
-    def __getitem__(self, i):
-        return self.stmts[i]
-
     def __bool__(self):
         return bool(self.stmts)
 

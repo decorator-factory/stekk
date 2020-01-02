@@ -11,6 +11,8 @@ from .parser import parse
 
 import inspect
 
+import os
+
 none = Const.get("N")
 error = Const.get("E")
 type_error = Const.get("T")
@@ -343,6 +345,15 @@ class VM:
         """compute an expression object"""
         return [get_value(value, self)]
 
+    @vm_onstack(1, name="import")
+    def import_(self, module_name):
+        with open(module_name + ".stekk") as file:
+            source = file.read()
+        statements = parse(source)
+        _, stripped_name = os.path.split(module_name)
+        self.names[stripped_name] = CodeBlock(statements)
+        return [self.names[stripped_name]]
+
 
     ["region stuff"]
 
@@ -405,8 +416,18 @@ class VM:
         obj[index] = value
 
     def getitem(self, obj, index):
-        if isinstance(obj, (list, tuple)) and isinstance(index, tuple):
-            return obj[slice(*index)]
+        if isinstance(obj, CodeBlock):
+            if isinstance(index, int):
+                return get_value(obj.stmts[index], self)
+            elif isinstance(index, Const):
+                for stmt in reversed(obj.stmts):
+                    if (isinstance(stmt, StmtAssign)
+                        and isinstance(stmt.lvalue, LvalueName)
+                        and stmt.lvalue.name == index.name):
+                       return get_value(stmt.expr, self)
+                return none
+            else:
+                return type_error
         else:
             return obj[index]
 
