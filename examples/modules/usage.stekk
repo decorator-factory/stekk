@@ -1,0 +1,45 @@
+;; this will load the module as a 'dict'
+;; (actually a code block)
+;; into a variable named 'collatz'
+("examples/modules/collatz" .import);
+
+;;      `namespace::name`
+;; is equivalent to: 
+;;      `.(namepace#$name)`
+
+(
+    "even = " .print
+    collatz#$even .as_src .println  $N
+);
+
+(
+    "4 is even = " .print
+    4 .collatz#$even .println
+    $N
+);
+(
+    "5 is even = " .print
+    5 collatz::even .println
+    $N
+);
+("" .println  $N);
+
+(
+    "7 => " .print
+    7 collatz::run .println 
+    $N
+);
+("" .println  $N);
+
+(
+    "15 => " .print
+    15 collatz::run .println 
+    $N
+);
+("" .println  $N);
+
+(
+    "103 => " .print
+    103 collatz::run .println 
+    $N
+);

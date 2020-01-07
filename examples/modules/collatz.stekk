@@ -1,0 +1,15 @@
+even := { (.dup 2 ./i 2 .* .=) };
+
+next := {
+    if (.dup collatz::even) 
+        (2 ./i)
+    else
+        (3 .* 1 .+)
+};
+
+run := {
+    if (.dup 1 .=)
+        [()]
+    else
+        ([(.dup)] .swap collatz::next collatz::run .++)
+};
