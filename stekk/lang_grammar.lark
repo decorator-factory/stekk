@@ -14,7 +14,7 @@ code_block : "{" (stmt ";")* (stmt|) "}"
 const : "$" name
 expr_ifelse.1 : "if" expr expr "else" expr
 expr_index : (expr_index | expr) "#" expr "#"?
-expr_list : "[" (expr ("," expr)*|) "]"
+expr_list : "[" expr* "]"
 expr_while.1: "while" expr expr
 ?fcall :   fcall_index
          | fcall_other
@@ -22,6 +22,7 @@ fcall_index.1 : "." expr_index
 fcall_other.0 : "." expr
 range.1 : expr ".." expr // to avoid collision with "expr1 fcall(fcall(expr2)"
 stack : "(" expr* ")"
+namespace : expr "::" name
 
 ?expr :   at_expr
         | code_block
@@ -32,6 +33,7 @@ stack : "(" expr* ")"
         | expr_while
         | fcall
         | name
+        | namespace
         | number
         | range
         | stack

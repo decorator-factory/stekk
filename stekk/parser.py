@@ -405,6 +405,9 @@ class Tranny(Transformer):
 
     fcall = fcall_index = fcall_other = FcallExpr
 
+    def namespace(self, expr, name):
+        return FcallExpr(GetitemExpr(expr, Const.get(name)))
+
     stack = STAR(Stack)
 
     code_block = STAR(CodeBlock)
