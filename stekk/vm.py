@@ -156,6 +156,10 @@ class VM:
     def mul(self, a, b):
         return [a * b]
 
+    @vm_onstack(2, name="mod")
+    def mod(self, a, b):
+        return [a % b]
+
     @vm_onstack(2, name="/f")
     def fdiv(self, a, b):
         return [a / b]
@@ -398,7 +402,7 @@ class VM:
 
     def run(self):
         self.execute_statements(self.statements)
-        
+
     def execute_statements(self, statements):
         for stmt in statements:
             self.register_operation()
