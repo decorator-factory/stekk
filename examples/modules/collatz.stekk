@@ -1,15 +1,19 @@
 even := { (.dup 2 ./i 2 .* .=) };
 
 next := {
-    if (.dup collatz::even) 
+    if (.dup collatz::even)
         (2 ./i)
     else
         (3 .* 1 .+)
 };
 
 run := {
-    if (.dup 1 .=)
+     if (.dup 1 .=)
         [()]
     else
         ([(.dup)] .swap collatz::next collatz::run .++)
 };
+
+;; f(n) =
+;;    if n%2==0 : n/2
+;;    else:       3n + 1
