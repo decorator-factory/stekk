@@ -7,10 +7,9 @@ from .vm import VM
 from .interactive import console
 
 def loads(string):
-    error = False 
+    error = False
     statements = vm.parse(string)
-    virtual_machine = vm.VM(statements, operations_limit=(10**8))
-    return virtual_machine
+    return vm.VM(statements, operations_limit=(10**8))
 
 def loadf(filename):
     with open(filename, 'r') as file:

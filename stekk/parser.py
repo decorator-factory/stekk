@@ -198,11 +198,7 @@ class WhileExpr(Expr):
 class Const(Expr):
     const = {}
     def __init__(self, name, desc="", truthy=True):
-        if isinstance(name, NameExpr):
-            self.name = name.name
-        else:
-            self.name = name
-
+        self.name = name.name if isinstance(name, NameExpr) else name
         assert isinstance(self.name, str)
 
         Const.const[self.name] = self
@@ -468,5 +464,4 @@ def parse(program):
 
     if error:
         raise StekkSyntaxError(error)
-    statements = Tranny().transform(x).children
-    return statements
+    return Tranny().transform(x).children

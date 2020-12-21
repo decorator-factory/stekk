@@ -406,10 +406,7 @@ class VM:
     def execute_statements(self, statements):
         for stmt in statements:
             self.register_operation()
-            if isinstance(stmt, (Expr, Stmt)):
-                self.last_result = stmt.run(self)
-            else:
-                self.last_result = stmt
+            self.last_result = stmt.run(self) if isinstance(stmt, (Expr, Stmt)) else stmt
 
     def assign_name(self, name, value):
         self.register_operation()
